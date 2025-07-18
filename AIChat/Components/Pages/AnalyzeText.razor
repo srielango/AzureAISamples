@@ -1,0 +1,213 @@
+﻿@page "/analyze-text"
+@using AIChat.Models
+@using AIChat.Services
+
+@inject ITextAnalysisService TextAnalysisService
+
+@rendermode InteractiveServer
+
+<h3 class="analyze-title">Azure AI Text Analysis</h3>
+
+<div class="analyze-container">
+    <div class="analyze-input">
+        <label for="inputText" class="analyze-label">Text to Analyze</label>
+        <textarea id="inputText" class="analyze-textarea" rows="5" @bind="InputText" placeholder="Enter text to analyze..."></textarea>
+    </div>
+
+    <div class="analyze-upload">
+        <label class="analyze-label" for="fileUpload">Upload .txt Files</label>
+        <InputFile id="fileUpload" OnChange="HandleFiles" multiple />
+        <p class="analyze-upload-desc">Upload one or more .txt files</p>
+    </div>
+
+    <div class="analyze-actions">
+        <button class="btn btn-primary analyze-btn" @onclick="Analyze" disabled="@IsAnalyzing">
+            @(IsAnalyzing ? "Analyzing..." : "Analyze")
+        </button>
+    </div>
+
+    @if (Results.Any())
+    {
+        @for (int i = 0; i < Results.Count; i++)
+        {
+            var analysisResult = Results[i];
+            <div class="analyze-results">
+                <h3 class="analyze-file-header">
+                    @if (i == 0 && !string.IsNullOrWhiteSpace(InputText))
+                    {
+                        <span>Text Input</span>
+                    }
+                    else if (UploadedFiles.Count >= i)
+                    {
+                        <span>@UploadedFiles[i - (string.IsNullOrWhiteSpace(InputText) ? 0 : 1)].Name</span>
+                    }
+                </h3>
+                <h4 class="analyze-section">Language Detection</h4>
+                <p><strong>Language:</strong> @analysisResult.DetectedLanguage</p>
+                <h4 class="analyze-section">Sentiment</h4>
+                <p><strong>Sentiment:</strong> @analysisResult.Sentiment</p>
+
+                <h4 class="analyze-section">Key Phrases</h4>
+                <ul>
+                    @foreach (var phrase in analysisResult.KeyPhrases)
+                    {
+                        <li>@phrase</li>
+                    }
+                </ul>
+
+                <h4 class="analyze-section">Entities</h4>
+                <ul>
+                    @foreach (var entity in analysisResult.Entities)
+                    {
+                        <li>
+                            <strong>@entity.Text</strong> - @entity.Category (@entity.ConfidenceScore.ToString("P2"))
+                        </li>
+                    }
+                </ul>
+
+                <h4 class="analyze-section">Linked Entities</h4>
+                <ul>
+                    @foreach (var linked in analysisResult.LinkedEntities)
+                    {
+                        <li>
+                            <strong>@linked.Name</strong> - <a href="@linked.Url" target="_blank">@linked.Url</a> (@linked.DataSource)
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private string InputText = string.Empty;
+    private bool IsAnalyzing = false;
+    private List<IBrowserFile> UploadedFiles = new();
+    private List<DocumentAnalysisResult> Results = new();
+
+    private async Task HandleFiles(InputFileChangeEventArgs e)
+    {
+        UploadedFiles = e.GetMultipleFiles().ToList();
+    }
+
+    private async Task Analyze()
+    {
+        Results.Clear();
+        IsAnalyzing = true;
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(InputText))
+            {
+                var result = await TextAnalysisService.AnalyzeAsync(InputText);
+                Results.Add(result);
+            }
+
+            foreach (var file in UploadedFiles)
+            {
+                using var stream = file.OpenReadStream();
+                using var reader = new StreamReader(stream);
+                var content = await reader.ReadToEndAsync();
+
+                if (!string.IsNullOrWhiteSpace(content))
+                {
+                    var result = await TextAnalysisService.AnalyzeAsync(content);
+                    Results.Add(result);
+                }
+            }
+        }
+        finally
+        {
+            IsAnalyzing = false;
+        }
+    }
+}
+
+<style>
+.analyze-container {
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.analyze-title {
+    text-align: center;
+    color: #0d6efd;
+    font-size: 1.7rem;
+    font-weight: bold;
+    margin-bottom: 24px;
+}
+.analyze-label {
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: block;
+    color: #0d6efd;
+}
+.analyze-input {
+    margin-bottom: 18px;
+}
+.analyze-upload {
+    margin-bottom: 18px;
+}
+.analyze-upload-desc {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin-top: 4px;
+    margin-bottom: 0;
+}
+.analyze-textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    resize: vertical;
+}
+.analyze-actions {
+    margin-bottom: 24px;
+    text-align: right;
+}
+.analyze-btn {
+    min-width: 120px;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 8px 20px;
+    transition: background 0.2s;
+}
+.analyze-btn:disabled {
+    background-color: #b6d4fe;
+    border-color: #b6d4fe;
+    color: #fff;
+}
+.analyze-btn:hover:not(:disabled) {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+.analyze-results {
+    margin-top: 32px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+.analyze-file-header {
+    color: #0d6efd;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    margin-top: 0;
+}
+.analyze-section {
+    color: #0d6efd;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 18px;
+    margin-bottom: 8px;
+}
+</style>

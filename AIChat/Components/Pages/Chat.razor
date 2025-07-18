@@ -80,7 +80,6 @@
     private string searchEndpoint, searchKey;
     private string searchIndex = "brochures-index";
     private string chatModel = "elango-deployment-model-gpt4omini";
-    private bool isConfigured = false;
     private bool showConfig = false;
 
     private void ToggleConfig()
@@ -91,7 +90,6 @@
     private void SetConfig()
     {
         if (string.IsNullOrWhiteSpace(endpoint) || string.IsNullOrWhiteSpace(apiKey)) return;
-        isConfigured = true;
     }
 
     private List<ChatMessage> chatHistory = new()

@@ -20,16 +20,16 @@ $searchAdminKey = az search admin-key show `
 $searchEndpoint = "https://$searchService.search.windows.net"
 
 # Upload PDFs to blob container
-#Get-ChildItem -Path $localFolder -Filter *.pdf | ForEach-Object {
-#    Write-Host "Uploading $($_.Name)..."
-#    az storage blob upload `
-#        --account-name $storageAccount `
-#        --account-key $storageKey `
-#        --container-name $containerName `
-#        --name $_.Name `
-#        --file $_.FullName `
-#        --overwrite
-#}
+Get-ChildItem -Path $localFolder -Filter *.pdf | ForEach-Object {
+    Write-Host "Uploading $($_.Name)..."
+    az storage blob upload `
+        --account-name $storageAccount `
+        --account-key $storageKey `
+        --container-name $containerName `
+        --name $_.Name `
+        --file $_.FullName `
+        --overwrite
+}
 
 # Create search index
 $indexDefinition = @{

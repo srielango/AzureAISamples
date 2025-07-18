@@ -1,5 +1,7 @@
 using AIChat;
 using AIChat.Components;
+using AIChat.Configuration;
+using AIChat.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,16 +9,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.Configure<AISettingsOption>(builder.Configuration.GetSection(AISettingsOption.Name));
+builder.Services.AddScoped<ITextAnalysisService, TextAnalysisService>();
+
 builder.Services.AddScoped<AzureOpenAIClientHelper>();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
