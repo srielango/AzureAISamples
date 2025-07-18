@@ -1,0 +1,226 @@
+﻿@page "/chat"
+@using Azure
+@using Azure.AI.OpenAI
+@using Azure.AI.OpenAI.Chat
+@using OpenAI.Chat
+@inject AzureOpenAIClientHelper ChatHelper
+@inject IConfiguration _config
+
+@rendermode InteractiveServer
+
+<h3>AI Chatbot (RAG)</h3>
+
+<div class="chat-container">
+    <div class="chat-history">
+        @foreach (var msg in chatHistory)
+        {
+            if(msg.GetType() == typeof(UserChatMessage))
+            {
+                <div class="user-message">
+                    <strong>user: @msg.Content[0].Text</strong>
+                </div>
+            }
+            else
+            {
+                <div class="bot-message">
+                    bot: @msg.Content[0].Text
+                </div>
+            }
+        }
+    </div>
+    <div class="chat-input">
+        <input @bind="userInput" placeholder="Ask a question..." />
+        <button class="btn btn-primary" @onclick="SendMessage">Send</button>
+    </div>
+    <button class="btn btn-outline-primary config-toggle" @onclick="ToggleConfig">@(showConfig ? "Hide Configuration" : "Show Configuration")</button>
+    @if (showConfig)
+    {
+        <div class="config-inputs">
+            <h5>Configure Azure OpenAI & Search</h5>
+            <div class="config-input">
+                <label for="endpoint">Azure OpenAI Endpoint</label>
+                <input id="endpoint" @bind="endpoint" placeholder="Azure OpenAI Endpoint" />
+            </div>
+            <div class="config-input">
+                <label for="apiKey">Azure OpenAI Key</label>
+                <input id="apiKey" @bind="apiKey" placeholder="Azure OpenAI Key" />
+            </div>
+            <div class="config-input">
+                <label for="chatModel">Chat Model Deployment</label>
+                <input id="chatModel" @bind="chatModel" placeholder="Chat Model Deployment" />
+            </div>
+            <div class="config-input">
+                <label for="embeddingModel">Embedding Model Deployment</label>
+                <input id="embeddingModel" @bind="embeddingModel" placeholder="Embedding Model Deployment" />
+            </div>
+            <div class="config-input">
+                <label for="searchEndpoint">Azure Search Endpoint</label>
+                <input id="searchEndpoint" @bind="searchEndpoint" placeholder="Azure Search Endpoint" />
+            </div>
+            <div class="config-input">
+                <label for="searchKey">Azure Search Key</label>
+                <input id="searchKey" @bind="searchKey" placeholder="Azure Search Key" />
+            </div>
+            <div class="config-input">
+                <label for="searchIndex">Search Index</label>
+                <input id="searchIndex" @bind="searchIndex" placeholder="Search Index" />
+            </div>
+            <div class="config-input">
+                <button class="btn btn-primary" @onclick="SetConfig">Start Chat</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string userInput = string.Empty;
+
+    private string endpoint, apiKey;
+    private string embeddingModel = "elango-deployment-model";
+    private string searchEndpoint, searchKey;
+    private string searchIndex = "brochures-index";
+    private string chatModel = "elango-deployment-model-gpt4omini";
+    private bool isConfigured = false;
+    private bool showConfig = false;
+
+    private void ToggleConfig()
+    {
+        showConfig = !showConfig;
+    }
+
+    private void SetConfig()
+    {
+        if (string.IsNullOrWhiteSpace(endpoint) || string.IsNullOrWhiteSpace(apiKey)) return;
+        isConfigured = true;
+    }
+
+    private List<ChatMessage> chatHistory = new()
+    {
+        new SystemChatMessage("You are a travel assistant that provides information on travel services available from Margie's Travel.")
+    };
+
+    private void SendMessage()
+    {
+        Console.WriteLine("User input: " + userInput);
+
+        if (string.IsNullOrWhiteSpace(userInput)) return;
+
+        chatHistory.Add(new UserChatMessage(userInput));
+        userInput = string.Empty;
+
+        var response = GetChatResponse();
+        chatHistory.Add(new AssistantChatMessage(response));
+    }
+
+    private string GetChatResponse()
+    {
+        AzureOpenAIClient client = new(
+            new Uri(endpoint),
+            new AzureKeyCredential(apiKey));
+
+        ChatClient chatClient = client.GetChatClient(chatModel);
+
+        ChatCompletionOptions options = new();
+
+#pragma warning disable AOAI001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        options.AddDataSource(new AzureSearchChatDataSource()
+        {
+            Endpoint = new Uri(searchEndpoint),
+            IndexName = searchIndex,
+            Authentication = DataSourceAuthentication.FromApiKey(searchKey),
+            QueryType = "vector",
+            VectorizationSource = DataSourceVectorizer.FromDeploymentName(embeddingModel)
+        });
+#pragma warning restore AOAI001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+
+        ChatCompletion completion = chatClient.CompleteChat(chatHistory, options);
+        var completionText = completion.Content[0].Text;
+
+        return completionText ?? "No response.";
+    }
+}
+
+<style>
+    .chat-container {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+    }
+
+    .config-toggle {
+        margin-top: 30px;
+        margin-bottom: 10px;
+        width: 100%;
+    }
+    .config-inputs {
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    .config-input {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 10px;
+        width: 100%;
+    }
+    .config-input label {
+        margin-bottom: 4px;
+        font-weight: 500;
+    }
+    .config-input input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 5px;
+    }
+    .config-input button {
+        width: 100%;
+    }
+
+    .chat-history {
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    .user-message {
+        text-align: right;
+        color: #007bff;
+        margin: 5px 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .bot-message {
+        text-align: left;
+        color: #0d6efd;
+        margin: 5px 0;
+    }
+
+    .chat-input {
+        display: flex;
+        gap: 10px;
+    }
+
+    .chat-input input {
+        flex-grow: 1;
+        padding: 5px;
+    }
+
+    .btn-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    .btn-primary:hover {
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+    }
+    .btn-outline-primary {
+        color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    .btn-outline-primary:hover {
+        background-color: #0d6efd;
+        color: #fff;
+    }
+</style>

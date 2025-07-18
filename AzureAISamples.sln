@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36202.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIChat", "AIChat\AIChat.csproj", "{6DDF17E4-F530-46CE-9243-5122516C18DA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IoCScripts", "IoCScripts", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		IoCScripts\Delete.ps1 = IoCScripts\Delete.ps1
+		IoCScripts\deploy.ps1 = IoCScripts\deploy.ps1
+		IoCScripts\main.bicep = IoCScripts\main.bicep
+		IoCScripts\postdeploy.ps1 = IoCScripts\postdeploy.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Brochures", "Brochures", "{0936F5DF-AE64-44DD-8970-2C49DB35FB20}"
+	ProjectSection(SolutionItems) = preProject
+		IoCScripts\Brochures\Dubai Brochure.pdf = IoCScripts\Brochures\Dubai Brochure.pdf
+		IoCScripts\Brochures\Las Vegas Brochure.pdf = IoCScripts\Brochures\Las Vegas Brochure.pdf
+		IoCScripts\Brochures\London Brochure.pdf = IoCScripts\Brochures\London Brochure.pdf
+		IoCScripts\Brochures\Margies Travel Company Info.pdf = IoCScripts\Brochures\Margies Travel Company Info.pdf
+		IoCScripts\Brochures\New York Brochure.pdf = IoCScripts\Brochures\New York Brochure.pdf
+		IoCScripts\Brochures\San Francisco Brochure.pdf = IoCScripts\Brochures\San Francisco Brochure.pdf
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6DDF17E4-F530-46CE-9243-5122516C18DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6DDF17E4-F530-46CE-9243-5122516C18DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6DDF17E4-F530-46CE-9243-5122516C18DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6DDF17E4-F530-46CE-9243-5122516C18DA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0936F5DF-AE64-44DD-8970-2C49DB35FB20} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4DF16133-D783-422D-A8A8-16E5BD878DCF}
+	EndGlobalSection
+EndGlobal
