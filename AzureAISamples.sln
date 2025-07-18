@@ -5,8 +5,10 @@ VisualStudioVersion = 17.14.36202.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIChat", "AIChat\AIChat.csproj", "{6DDF17E4-F530-46CE-9243-5122516C18DA}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IoCScripts", "IoCScripts", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IaCScripts", "IaCScripts", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
+		IoCScripts\Create-AILanguageResource.ps1 = IoCScripts\Create-AILanguageResource.ps1
+		IoCScripts\delete-elango-ai-group.ps1 = IoCScripts\delete-elango-ai-group.ps1
 		IoCScripts\Delete.ps1 = IoCScripts\Delete.ps1
 		IoCScripts\deploy.ps1 = IoCScripts\deploy.ps1
 		IoCScripts\main.bicep = IoCScripts\main.bicep

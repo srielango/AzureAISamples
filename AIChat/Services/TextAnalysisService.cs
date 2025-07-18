@@ -47,7 +47,7 @@ public class TextAnalysisService : ITextAnalysisService
     {
         List<LinkedEntity> entities = new List<LinkedEntity>();
         LinkedEntityCollection linkedEntities = await aiClient.RecognizeLinkedEntitiesAsync(text);
-        if (!linkedEntities.Any())
+        if (linkedEntities.Any())
         {
             entities.AddRange(linkedEntities);
         }
