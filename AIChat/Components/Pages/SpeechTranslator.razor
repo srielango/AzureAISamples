@@ -129,6 +129,7 @@
 </style>
 
 @code {
+    // Represents a chat message with original and translated text
     public class ChatItem
     {
         public string Original { get; set; }
@@ -147,6 +148,7 @@
     byte[]? AudioData;
     List<ChatItem> Messages = new();
 
+    // Starts speech translation and handles results
     async Task StartListening()
     {
         IsListening = true;
@@ -155,21 +157,33 @@
 
         await SpeechService.StartContinuousTranslationAsync(
             TargetLang,
-            async (recognized, translated) =>
-            {
-                Messages.Add(new ChatItem(recognized, translated));
-                AudioData = await SpeechService.SynthesizeAsync(translated, TargetLang);
-                AudioUrl = $"data:audio/wav;base64,{Convert.ToBase64String(AudioData)}";
-                await InvokeAsync(StateHasChanged);
-                await Task.Delay(100); // Let UI render
-                await JS.InvokeVoidAsync("audioInterop.playAudio", audioRef);
-            },
-            () => IsListening = false,
-            (error) =>
-            {
-                IsListening = false;
-                Messages.Add(new ChatItem("❌ Error", error));
-                StateHasChanged();
-            });
+            OnTranslationReceived,
+            OnTranslationCompleted,
+            OnTranslationError);
+    }
+
+    // Handles translation results
+    private async void OnTranslationReceived(string recognized, string translated)
+    {
+        Messages.Add(new ChatItem(recognized, translated));
+        AudioData = await SpeechService.SynthesizeAsync(translated, TargetLang);
+        AudioUrl = $"data:audio/wav;base64,{Convert.ToBase64String(AudioData)}";
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(100); // Let UI render
+        await JS.InvokeVoidAsync("audioInterop.playAudio", audioRef);
+    }
+
+    // Handles completion
+    private void OnTranslationCompleted()
+    {
+        IsListening = false;
+    }
+
+    // Handles errors
+    private void OnTranslationError(string error)
+    {
+        IsListening = false;
+        Messages.Add(new ChatItem("❌ Error", error));
+        StateHasChanged();
     }
 }
