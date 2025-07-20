@@ -50,13 +50,13 @@ Welcome to my AI-powered Blazor Server application, showcasing advanced integrat
    ```bash
    dotnet run
    ```
-   Access the app at `https://localhost:5001`.
 
 ## Screenshots
 
-![Chat Interface](screenshots/chat.png)
-![Text Analysis](screenshots/text-analysis.png)
-![Speech Translation](screenshots/speech-translation.png)
+<img width="677" height="787" alt="image" src="https://github.com/user-attachments/assets/bc11c4cc-00e7-486b-833f-dc1bdc9d194f" />
+
+<img width="576" height="572" alt="image" src="https://github.com/user-attachments/assets/76cefb42-4115-4446-9500-2a77162cbecb" />
+
 
 ## About Me
 
