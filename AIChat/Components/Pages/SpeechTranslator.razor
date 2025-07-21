@@ -1,5 +1,6 @@
 ﻿@page "/speech-translator"
 @using AIChat.Services
+@using Microsoft.AspNetCore.Components.Web
 
 @inject IJSRuntime JS
 @inject ISpeechService SpeechService
@@ -17,15 +18,12 @@
                 <option value="hi">Hindi</option>
             </select>
         </div>
-        <div class="speech-row">
-            @if (IsListening)
-            {
-                <span class="badge bg-success animate-glow">🎤 Listening...</span>
-            }
-            else
-            {
-                <button class="btn btn-primary speech-btn" @onclick="StartListening">Start Listening</button>
-            }
+        <div class="speech-row search-bar-row">
+            <input class="speech-search-input" @bind="TypedText" @onkeydown="OnInputKeyDown" placeholder="Type or speak in English..." />
+            <button class="btn speech-mic-btn" @onclick="StartListening" disabled="@IsListening">
+                <span>@(IsListening ? "🎤" : "🎙️")</span>
+            </button>
+            <button class="btn btn-primary speech-search-btn" @onclick="TranslateTypedText" disabled="@IsListening || string.IsNullOrWhiteSpace(TypedText)">Translate</button>
         </div>
         <div class="speech-row">
             <audio controls @ref="audioRef" src="@AudioUrl" type="audio/wav"></audio>
@@ -85,17 +83,49 @@
     border: 1px solid #ccc;
     font-size: 1rem;
 }
-.speech-btn {
-    min-width: 140px;
+.speech-search-input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1.1rem;
+    outline: none;
+}
+.speech-mic-btn {
+    background: #fff;
+    border: 1px solid #0d6efd;
+    color: #0d6efd;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 4px;
+    margin-right: 4px;
+    transition: background 0.2s;
+}
+.speech-mic-btn:disabled {
+    opacity: 0.6;
+}
+.speech-mic-btn:hover:not(:disabled) {
+    background: #e7f1ff;
+}
+.speech-search-btn {
+    min-width: 100px;
     background-color: #0d6efd;
     border-color: #0d6efd;
     color: #fff;
     font-weight: 500;
     border-radius: 6px;
-    padding: 8px 20px;
+    padding: 8px 16px;
     transition: background 0.2s;
 }
-.speech-btn:hover:not(:disabled) {
+.speech-search-btn:disabled {
+    opacity: 0.6;
+}
+.speech-search-btn:hover:not(:disabled) {
     background-color: #0b5ed7;
     border-color: #0a58ca;
 }
@@ -126,10 +156,14 @@
     border-radius: 6px;
     background: #e9ecef;
 }
+.search-bar-row {
+    margin-top: 8px;
+    margin-bottom: 8px;
+    width: 100%;
+}
 </style>
 
 @code {
-    // Represents a chat message with original and translated text
     public class ChatItem
     {
         public string Original { get; set; }
@@ -141,15 +175,44 @@
         }
     }
 
-    string TargetLang = "ta";
-    bool IsListening = false;
-    ElementReference audioRef;
-    string AudioUrl;
-    byte[]? AudioData;
-    List<ChatItem> Messages = new();
+    private string TargetLang { get; set; } = "ta";
+    private bool IsListening { get; set; } = false;
+    private ElementReference audioRef;
+    private string AudioUrl { get; set; }
+    private byte[]? AudioData { get; set; }
+    private List<ChatItem> Messages { get; set; } = new();
+    private string TypedText { get; set; } = string.Empty;
 
-    // Starts speech translation and handles results
-    async Task StartListening()
+    private async Task TranslateTypedText()
+    {
+        if (string.IsNullOrWhiteSpace(TypedText)) return;
+        try
+        {
+            var response = await SpeechService.TranslateTextAsync(TypedText, TargetLang);
+            Messages.Add(new ChatItem(response.RecognizedText, response.TranslatedText));
+            AudioData = response.Audio;
+            AudioUrl = AudioData != null && AudioData.Length > 0 ? $"data:audio/wav;base64,{Convert.ToBase64String(AudioData)}" : null;
+            TypedText = string.Empty;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(100);
+            await JS.InvokeVoidAsync("audioInterop.playAudio", audioRef);
+        }
+        catch (Exception ex)
+        {
+            Messages.Add(new ChatItem("❌ Error", ex.Message));
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OnInputKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await TranslateTypedText();
+        }
+    }
+
+    private async Task StartListening()
     {
         IsListening = true;
         AudioUrl = null;
@@ -162,24 +225,21 @@
             OnTranslationError);
     }
 
-    // Handles translation results
     private async void OnTranslationReceived(string recognized, string translated)
     {
         Messages.Add(new ChatItem(recognized, translated));
         AudioData = await SpeechService.SynthesizeAsync(translated, TargetLang);
         AudioUrl = $"data:audio/wav;base64,{Convert.ToBase64String(AudioData)}";
         await InvokeAsync(StateHasChanged);
-        await Task.Delay(100); // Let UI render
+        await Task.Delay(100);
         await JS.InvokeVoidAsync("audioInterop.playAudio", audioRef);
     }
 
-    // Handles completion
     private void OnTranslationCompleted()
     {
         IsListening = false;
     }
 
-    // Handles errors
     private void OnTranslationError(string error)
     {
         IsListening = false;

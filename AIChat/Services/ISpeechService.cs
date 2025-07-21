@@ -7,5 +7,6 @@ namespace AIChat.Services
         Task StartContinuousTranslationAsync(string targetLang, Action<string, string> onTranslationReceived, Action onCompleted, Action<string> onError);
         Task<byte[]> SynthesizeAsync(string text, string lang);
         Task<SpeechTranslatorResponse> TranslateAndSpeakAsync(string targetLang);
+        Task<SpeechTranslatorResponse> TranslateTextAsync(string text, string targetLang); // NEW: Translate typed text
     }
 }
