@@ -1,7 +1,79 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Blazor Server application with AI-powered chatbot, text analysis, and speech translation using .NET 8 and Azure AI.">
+    <meta name="keywords" content="Blazor, .NET 8, Azure AI, OpenAI, RAG, Text Analysis, Speech Translation">
+    <meta name="author" content="Elango Srinivasan">
+    <title>AI-Powered Blazor Application</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white py-6">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-4xl font-bold">AI-Powered Blazor Application</h1>
+            <p class="mt-2 text-lg">Built with .NET 8, Azure AI, and OpenAI</p>
+        </div>
+    </header>
 
-<h1>Hello, world!</h1>
+    <!-- Features Section -->
+    <section class="py-12 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-8">Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- RAG Chatbot -->
+                <div class="bg-gray-50 p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">RAG Chatbot</h3>
+                    <p class="text-gray-600">An intelligent chatbot using OpenAI's Retrieval-Augmented Generation (RAG) for context-aware responses based on document retrieval.</p>
+                </div>
+                <!-- Text Analysis -->
+                <div class="bg-gray-50 p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Text Analysis</h3>
+                    <p class="text-gray-600">Analyze text or PDFs with Azure Language Service for language detection, sentiment, key phrases, entities, and linked entities.</p>
+                </div>
+                <!-- Speech Translation -->
+                <div class="bg-gray-50 p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Speech Translation</h3>
+                    <p class="text-gray-600">Real-time speech-to-text and translation from English to Tamil or Hindi using Azure Speech Service (under maintenance).</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-Welcome to your new app.
+    <!-- About Section -->
+    <section class="py-12 bg-gray-100">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-8">About the Developer</h2>
+            <p class="text-gray-700 max-w-2xl mx-auto">
+                Elango Srinivasan is a Microsoft Certified Developer Associate, DevOps Expert, and AI Engineer Associate with over 23 years of experience in .NET, Azure, and microservices. Based in Chennai, India, he specializes in developing scalable, AI-powered web applications.
+            </p>
+            <div class="mt-6 space-x-4">
+                <NavLink href="https://www.linkedin.com/in/elango-srinivasan/" class="inline-block bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700">Connect on LinkedIn</NavLink>
+                <NavLink href="https://www.upwork.com/freelancers/elangosrinivasan" class="inline-block bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700">View Upwork Profile</NavLink>
+                <NavLink href="https://github.com/yourusername/your-repo" class="inline-block bg-gray-800 text-white font-semibold py-2 px-4 rounded hover:bg-gray-900">View Source on GitHub</NavLink>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="py-12 bg-white text-center">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold mb-4">Get in Touch</h2>
+            <p class="text-lg mb-6">Interested in collaborating or learning more about this project? Reach out to discuss your requirements.</p>
+            <NavLink href="mailto:srielango@gmail.com" class="inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded hover:bg-blue-700">Contact via Email</NavLink>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p>© 2025 Elango Srinivasan. All rights reserved.</p>
+            <p class="mt-2">Built with <a href="https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor" class="underline">Blazor</a> and <a href="https://azure.microsoft.com/" class="underline">Azure</a>.</p>
+        </div>
+    </footer>
+</body>
+</html>
