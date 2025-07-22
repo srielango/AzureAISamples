@@ -1,4 +1,5 @@
 ﻿@page "/speech-translator"
+@using AIChat.Models
 @using AIChat.Services
 @using Microsoft.AspNetCore.Components.Web
 
@@ -164,16 +165,7 @@
 </style>
 
 @code {
-    public class ChatItem
-    {
-        public string Original { get; set; }
-        public string Translated { get; set; }
-        public ChatItem(string original, string translated)
-        {
-            Original = original;
-            Translated = translated;
-        }
-    }
+
 
     private string TargetLang { get; set; } = "ta";
     private bool IsListening { get; set; } = false;

@@ -1,0 +1,60 @@
+﻿@page "/speech"
+@using AIChat.Services
+
+@inject IJSRuntime JS
+@inject NewSpeechService SpeechService
+
+@rendermode InteractiveServer
+
+@implements IDisposable
+
+<h3>Speech Translator</h3>
+
+<button @onclick="StartRecording">Start</button>
+<button @onclick="StopRecording">Stop</button>
+
+<p>@translationResult</p>
+
+@code {
+    private DotNetObjectReference<Speech>? dotNetHelper;
+    private string translationResult = "";
+
+    protected override void OnInitialized()
+    {
+        dotNetHelper = DotNetObjectReference.Create(this);
+    }
+
+    private async Task StartRecording()
+    {
+        await JS.InvokeVoidAsync("startRecording");
+    }
+
+    private async Task StopRecording()
+    {
+        await JS.InvokeVoidAsync("stopRecording", dotNetHelper);
+    }
+
+    [JSInvokable]
+    public async Task OnAudioCaptured(string base64Wav)
+    {
+        try
+        {
+            translationResult = await SpeechService.TranslateSpeechAsync(base64Wav);
+        }
+        catch (Exception ex)
+        {
+            translationResult = "Error: " + ex.Message;
+            Console.WriteLine(ex); // Or log to file/Serilog
+        }
+    }
+
+    public void Dispose()
+    {
+        dotNetHelper?.Dispose();
+    }
+
+    public class TranslationResponse
+    {
+        public string TranslatedText { get; set; } = "";
+    }
+}
