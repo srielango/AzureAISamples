@@ -8,16 +8,59 @@
 
 @implements IDisposable
 
-<h3>Speech Translator</h3>
+<PageTitle>Speech Translator</PageTitle>
 
-<button @onclick="StartRecording">Start</button>
-<button @onclick="StopRecording">Stop</button>
+<div class="p-4">
+    <h3 class="text-xl font-semibold mb-4">Speech Translator</h3>
 
-<p>@translationResult</p>
+    <div class="mb-4">
+        <label class="block mb-1 font-medium">From Language:</label>
+        <select class="border border-gray-300 p-2 rounded w-full" @bind="FromLanguage">
+            @foreach (var lang in Languages)
+            {
+                <option value="@lang">@lang</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-4">
+        <label class="block mb-1 font-medium">To Language:</label>
+        <select class="border border-gray-300 p-2 rounded w-full" @bind="ToLanguage">
+            @foreach (var lang in Languages)
+            {
+                <option value="@lang">@lang</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-4">
+        <button class="bg-blue-500 px-4 py-2 rounded mr-2" @onclick="StartRecording">Start</button>
+        <button class="bg-red-500 px-4 py-2 rounded" @onclick="StopRecording">Stop</button>
+    </div>
+
+    <div class="mb-4">
+        <label class="block mb-1 font-medium">Recognized Text:</label>
+        <textarea class="border border-gray-300 p-2 rounded w-full" rows="3" readonly>@RecognizedText</textarea>
+    </div>
+
+    <div class="mb-4">
+        <label class="block mb-1 font-medium">Translated Text:</label>
+        <textarea class="border border-gray-300 p-2 rounded w-full" rows="3" readonly>@TranslatedText</textarea>
+    </div>
+</div>
 
 @code {
     private DotNetObjectReference<Speech>? dotNetHelper;
-    private string translationResult = "";
+
+    private string FromLanguage = "en";
+    private string ToLanguage = "ta";
+    private string RecognizedText = string.Empty;
+    private string TranslatedText = string.Empty;
+
+    private List<string> Languages = new List<string>
+    {
+        "en", "ta", "fr", "de", "es", "hi", "te", "ml", "zh"
+    };
 
     protected override void OnInitialized()
     {
@@ -26,6 +69,8 @@
 
     private async Task StartRecording()
     {
+        RecognizedText = string.Empty;
+        TranslatedText = string.Empty;
         await JS.InvokeVoidAsync("startRecording");
     }
 
@@ -34,27 +79,17 @@
         await JS.InvokeVoidAsync("stopRecording", dotNetHelper);
     }
 
-    [JSInvokable]
-    public async Task OnAudioCaptured(string base64Wav)
+    [JSInvokable("OnAudioCaptured")]
+    public async Task OnAudioCaptured(string base64Audio)
     {
-        try
-        {
-            translationResult = await SpeechService.TranslateSpeechAsync(base64Wav);
-        }
-        catch (Exception ex)
-        {
-            translationResult = "Error: " + ex.Message;
-            Console.WriteLine(ex); // Or log to file/Serilog
-        }
+        var result = await SpeechService.ProcessAudioAsync(base64Audio, FromLanguage, ToLanguage);
+        RecognizedText = result.RecognizedText;
+        TranslatedText = result.TranslatedText;
+        StateHasChanged();
     }
 
     public void Dispose()
     {
         dotNetHelper?.Dispose();
-    }
-
-    public class TranslationResponse
-    {
-        public string TranslatedText { get; set; } = "";
     }
 }
