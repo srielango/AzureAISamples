@@ -1,133 +1,112 @@
-﻿using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using AIChat.Configuration;
+﻿using AIChat.Configuration;
 using AIChat.Models;
-using AIChat.Services;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
-using Microsoft.CognitiveServices.Speech.Translation;
 using Microsoft.Extensions.Options;
+using System.Text;
+using System.Text.Json;
 
-public class SpeechService : ISpeechService
+public class SpeechService
 {
     private readonly AISettingsOption _settings;
     private readonly string _key;
     private readonly string _region;
     private readonly string _translatorKey;
+    private readonly IWebHostEnvironment _env;
 
     private readonly Dictionary<string, string> _voices = new()
     {
         ["ta"] = "ta-IN-PallaviNeural",
-        ["hi"] = "hi-IN-MadhurNeural"
+        ["hi"] = "hi-IN-MadhurNeural",
+        ["fr"] = "fr-FR-DeniseNeural",
+        ["de"] = "de-DE-KatjaNeural",
+        ["en"] = "en-AU-NatashaNeural",
+        ["ar"] = "ar-AE-FatimaNeural"
     };
 
-    public SpeechService(IOptions<AISettingsOption> options)
+    public SpeechService(IOptions<AISettingsOption> options, IWebHostEnvironment env)
     {
         _settings = options.Value;
         _key = _settings.SpeechKey;
-        _translatorKey = _settings.TranslatorKey;
-
         _region = _settings.SpeechRegion;
+        _translatorKey = _settings.TranslatorKey;
+        _env = env;
     }
 
-    public async Task<SpeechTranslatorResponse> TranslateAndSpeakAsync(string targetLang)
+    public async Task<SpeechTranslatorResponse> ProcessAudioAsync(string base64Audio, string toLanguage)
     {
-        var translationConfig = CreateTranslationConfig(targetLang);
-        using var audioConfig = AudioConfig.FromDefaultMicrophoneInput();
-        using var recognizer = new TranslationRecognizer(translationConfig, audioConfig);
+        var audioBytes = Convert.FromBase64String(base64Audio);
+        using var audioContent = new ByteArrayContent(audioBytes);
+        string tempFile = Path.Combine(_env.ContentRootPath, "TempAudio", $"{Guid.NewGuid()}.wav");
+        Directory.CreateDirectory(Path.GetDirectoryName(tempFile)!);
+        await File.WriteAllBytesAsync(tempFile, audioBytes);
 
-        var result = await recognizer.RecognizeOnceAsync();
-        if (result.Reason != ResultReason.TranslatedSpeech)
-            throw new Exception($"Speech recognition failed: {result.Reason}");
+        string normalizedPath = NormalizeWavTo16kHzMono(tempFile);
+        var recognizedText = await RecognizeSpeechAsync(normalizedPath);
+        var response = await TranslateTextAsync(recognizedText, toLanguage);
 
-        var recognizedText = result.Text;
-        var translatedText = result.Translations[targetLang];
-        var audioData = await SynthesizeAsync(translatedText, targetLang);
-        return new SpeechTranslatorResponse(recognizedText, translatedText, audioData);
+        File.Delete(normalizedPath);
+
+        File.Delete(tempFile); // Clean up
+        return response;
     }
-
-    // Translate typed text (not speech)
     public async Task<SpeechTranslatorResponse> TranslateTextAsync(string text, string targetLang)
     {
-        if (string.IsNullOrWhiteSpace(_translatorKey) || string.IsNullOrWhiteSpace(_region))
-            throw new Exception("Translator Text API key or region is not configured.");
-
-        // Standard endpoint for Azure Translator Text API
-        string endpoint = $"https://api.cognitive.microsofttranslator.com";
-        string route = $"/translate?api-version=3.0&to={targetLang}";
-        string uri = endpoint + route;
-        var requestBody = JsonSerializer.Serialize(new object[] { new { Text = text } });
+        var endpoint = $"https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to={targetLang}";
 
         using var client = new HttpClient();
-        using var request = new HttpRequestMessage();
-        request.Method = HttpMethod.Post;
-        request.RequestUri = new Uri(uri);
-        request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
-        request.Headers.Add("Ocp-Apim-Subscription-Key", _translatorKey);
-        request.Headers.Add("Ocp-Apim-Subscription-Region", _region);
+        client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _translatorKey);
+        client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Region", _region);
 
-        using var response = await client.SendAsync(request);
+        var requestBody = new[]
+        {
+            new { Text = text }
+        };
+
+        var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync(endpoint, content);
         response.EnsureSuccessStatusCode();
-        var responseBody = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(responseBody);
-        var translatedText = doc.RootElement[0].GetProperty("translations")[0].GetProperty("text").GetString();
+
+        var jsonResponse = await response.Content.ReadAsStringAsync();
+
+        using var doc = JsonDocument.Parse(jsonResponse);
+        var translatedText = doc.RootElement[0]
+            .GetProperty("translations")[0]
+            .GetProperty("text")
+            .GetString();
 
         var audioData = await SynthesizeAsync(translatedText, targetLang);
         return new SpeechTranslatorResponse(text, translatedText, audioData);
     }
-
-    public async Task StartContinuousTranslationAsync(
-        string targetLang,
-        Action<string, string> onTranslationReceived,
-        Action onCompleted,
-        Action<string> onError)
-    {
-        var translationConfig = CreateTranslationConfig(targetLang);
-        using var audioConfig = AudioConfig.FromDefaultMicrophoneInput();
-        using var recognizer = new TranslationRecognizer(translationConfig, audioConfig);
-
-        recognizer.Recognized += (s, e) => HandleRecognized(e, targetLang, onTranslationReceived);
-        recognizer.Canceled += (s, e) => onError?.Invoke(e.ErrorDetails);
-        recognizer.SessionStopped += (s, e) => onCompleted?.Invoke();
-
-        try
-        {
-            await recognizer.StartContinuousRecognitionAsync();
-            await Task.Delay(10000); // Listen for 10 seconds
-            await recognizer.StopContinuousRecognitionAsync();
-        }
-        catch (Exception ex)
-        {
-            onError?.Invoke(ex.Message);
-        }
-    }
-
-    private void HandleRecognized(TranslationRecognitionEventArgs e, string targetLang, Action<string, string> onTranslationReceived)
-    {
-        if (e.Result.Reason == ResultReason.TranslatedSpeech)
-        {
-            var recognized = e.Result.Text;
-            var translated = e.Result.Translations[targetLang];
-            onTranslationReceived?.Invoke(recognized, translated);
-        }
-    }
-
-    private SpeechTranslationConfig CreateTranslationConfig(string targetLang)
-    {
-        var config = SpeechTranslationConfig.FromSubscription(_key, _region);
-        config.SpeechRecognitionLanguage = "en-US";
-        config.AddTargetLanguage(targetLang);
-        return config;
-    }
-
-    public async Task<byte[]> SynthesizeAsync(string text, string lang)
+    private async Task<byte[]> SynthesizeAsync(string text, string lang)
     {
         var config = SpeechConfig.FromSubscription(_key, _region);
         config.SpeechSynthesisVoiceName = _voices[lang];
         using var synthesizer = new SpeechSynthesizer(config, null);
         var result = await synthesizer.SpeakTextAsync(text);
         return result.AudioData;
+    }
+
+    private string NormalizeWavTo16kHzMono(string inputPath)
+    {
+        var outputPath = Path.Combine(Path.GetDirectoryName(inputPath)!, $"{Guid.NewGuid()}-normalized.wav");
+
+        using var reader = new NAudio.Wave.AudioFileReader(inputPath);
+        var resampler = new NAudio.Wave.MediaFoundationResampler(reader, new NAudio.Wave.WaveFormat(16000, 16, 1));
+        NAudio.Wave.WaveFileWriter.CreateWaveFile(outputPath, resampler);
+
+        return outputPath;
+    }
+
+    private async Task<string> RecognizeSpeechAsync(string wavFile)
+    {
+        var config = SpeechConfig.FromSubscription(_key, _region);
+
+        using var audioInput = AudioConfig.FromWavFileInput(wavFile);
+        using var recognizer = new SpeechRecognizer(config, audioInput);
+
+        var result = await recognizer.RecognizeOnceAsync();
+        return result.Reason == ResultReason.RecognizedSpeech ? result.Text : "";
     }
 }

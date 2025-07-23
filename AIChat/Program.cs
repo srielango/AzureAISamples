@@ -11,8 +11,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.Configure<AISettingsOption>(builder.Configuration.GetSection(AISettingsOption.Name));
 builder.Services.AddScoped<ITextAnalysisService, TextAnalysisService>();
-builder.Services.AddScoped<ISpeechService, SpeechService>();
-builder.Services.AddScoped<NewSpeechService>();
+builder.Services.AddScoped<SpeechService>();
 
 builder.Services.AddServerSideBlazor()
     .AddCircuitOptions(options =>
