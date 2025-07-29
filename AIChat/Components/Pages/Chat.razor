@@ -12,6 +12,11 @@
 <h3 class="title">AI Chatbot (RAG)</h3>
 
 <div class="chat-container">
+    <div class="chat-options">
+        <label>
+            <input type="checkbox" @bind="useRag" /> Use RAG Search
+        </label>
+    </div>
     <div class="chat-history">
         @foreach (var msg in chatHistory)
         {
@@ -87,6 +92,7 @@
     private string searchIndex = "brochures-index";
     
     private bool showConfig = false;
+    private bool useRag = true;
 
     private void ToggleConfig()
     {
@@ -112,35 +118,59 @@
         chatHistory.Add(new UserChatMessage(userInput));
         userInput = string.Empty;
 
-        var response = GetChatResponse();
+        var (response, isGeneral) = GetChatResponse();
+        if (isGeneral)
+        {
+            response = "_(General mode: This answer is based on general knowledge from GPT-4o, not Margie's Travel documents.)_\n\n" + response;
+        }
         chatHistory.Add(new AssistantChatMessage(response));
     }
 
-    private string GetChatResponse()
+    private (string response, bool isGeneral) GetChatResponse()
     {
         AzureOpenAIClient client = new(
             new Uri(endpoint),
             new AzureKeyCredential(apiKey));
 
         ChatClient chatClient = client.GetChatClient(chatModel);
+        string completionText = null;
+        bool usedGeneral = false;
 
-        ChatCompletionOptions options = new();
-
-#pragma warning disable AOAI001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-        options.AddDataSource(new AzureSearchChatDataSource()
+        if (useRag)
         {
-            Endpoint = new Uri(searchEndpoint),
-            IndexName = searchIndex,
-            Authentication = DataSourceAuthentication.FromApiKey(searchKey),
-            QueryType = "vector",
-            VectorizationSource = DataSourceVectorizer.FromDeploymentName(embeddingModel)
-        });
-#pragma warning restore AOAI001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+            ChatCompletionOptions options = new();
+#pragma warning disable AOAI001
+            options.AddDataSource(new AzureSearchChatDataSource()
+            {
+                Endpoint = new Uri(searchEndpoint),
+                IndexName = searchIndex,
+                Authentication = DataSourceAuthentication.FromApiKey(searchKey),
+                QueryType = "vector",
+                VectorizationSource = DataSourceVectorizer.FromDeploymentName(embeddingModel)
+            });
+#pragma warning restore AOAI001
+            ChatCompletion completion = chatClient.CompleteChat(chatHistory, options);
+            completionText = completion.Content[0].Text;
+            // Fallback: If RAG response is empty or generic, try general search
+            if (string.IsNullOrWhiteSpace(completionText) || completionText.Contains("I couldn't find", StringComparison.OrdinalIgnoreCase) || completionText.Contains("No relevant information", StringComparison.OrdinalIgnoreCase))
+            {
+                completionText = GetGeneralChatResponse(chatClient);
+                usedGeneral = true;
+            }
+        }
+        else
+        {
+            completionText = GetGeneralChatResponse(chatClient);
+            usedGeneral = true;
+        }
+        return (completionText ?? "No response.", usedGeneral);
+    }
 
+    private string GetGeneralChatResponse(ChatClient chatClient)
+    {
+        ChatCompletionOptions options = new();
         ChatCompletion completion = chatClient.CompleteChat(chatHistory, options);
-        var completionText = completion.Content[0].Text;
-
-        return completionText ?? "No response.";
+        return completion.Content[0].Text;
     }
 
     private string ConvertMarkdownToHtml(string markdown)
@@ -164,6 +194,19 @@
         max-width: 800px;
         margin: auto;
         padding: 20px;
+    }
+
+    .chat-options {
+        margin-bottom: 10px;
+        text-align: right;
+    }
+    .chat-options label {
+        font-weight: 500;
+        color: #0d6efd;
+        cursor: pointer;
+    }
+    .chat-options input[type="checkbox"] {
+        margin-right: 6px;
     }
 
     .config-toggle {
@@ -214,11 +257,15 @@
 
     .bot-message {
         text-align: left;
-        color: #0d6efd;
+        color: #00897b;
+        background: #e0f2f1;
         margin: 5px 0;
         width: 100%;
         box-sizing: border-box;
         word-break: break-word;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-weight: 500;
     }
 
     .chat-input {
