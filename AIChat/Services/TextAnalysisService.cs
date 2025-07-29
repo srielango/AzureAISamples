@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace AIChat.Services;
 
-public class TextAnalysisService : ITextAnalysisService
+public class TextAnalysisService
 {
     private AISettingsOption _settings;
 
@@ -15,7 +15,7 @@ public class TextAnalysisService : ITextAnalysisService
         _settings = options.Value;
     }
 
-    public async Task<DocumentAnalysisResult> AnalyzeAsync(string text)
+    public async Task<TextAnalysisResult> AnalyzeAsync(string text)
     {
         var credentials = new AzureKeyCredential(_settings.ServiceKey);
         var endPoint = new Uri(_settings.ServiceEndPoint);
@@ -24,9 +24,9 @@ public class TextAnalysisService : ITextAnalysisService
         return await Analyze(aiClient, text) ;
     }
 
-    private async Task<DocumentAnalysisResult> Analyze(TextAnalyticsClient aiClient, string text)
+    private async Task<TextAnalysisResult> Analyze(TextAnalyticsClient aiClient, string text)
     {
-        var documentDetails = new DocumentAnalysisResult();
+        var documentDetails = new TextAnalysisResult();
 
         documentDetails.OriginalText = text;
 

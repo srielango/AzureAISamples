@@ -5,13 +5,19 @@ using AIChat.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = 50 * 1024 * 1024; // 50 MB
+});
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.Configure<AISettingsOption>(builder.Configuration.GetSection(AISettingsOption.Name));
-builder.Services.AddScoped<ITextAnalysisService, TextAnalysisService>();
+builder.Services.AddScoped<TextAnalysisService>();
 builder.Services.AddScoped<SpeechService>();
+builder.Services.AddScoped<AudioTranscriptionService>();
 
 builder.Services.AddServerSideBlazor()
     .AddCircuitOptions(options =>

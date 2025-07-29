@@ -3,6 +3,7 @@
 @using Azure.AI.OpenAI
 @using Azure.AI.OpenAI.Chat
 @using OpenAI.Chat
+@using Markdig
 @inject AzureOpenAIClientHelper ChatHelper
 @inject IConfiguration _config
 
@@ -23,7 +24,7 @@
             else
             {
                 <div class="bot-message">
-                    bot: @msg.Content[0].Text
+                    @((MarkupString)ConvertMarkdownToHtml(msg.Content[0].Text))
                 </div>
             }
         }
@@ -75,11 +76,16 @@
 @code {
     private string userInput = string.Empty;
 
-    private string endpoint, apiKey;
-    private string embeddingModel = "elango-deployment-model";
-    private string searchEndpoint, searchKey;
+    private string endpoint = "";
+    private string apiKey = "";
+    private string chatModel = "gpt-4o";
+
+    private string embeddingModel = "text-embedding-ada-002";
+    
+    private string searchEndpoint = "";
+    private string searchKey = "";
     private string searchIndex = "brochures-index";
-    private string chatModel = "elango-deployment-model-gpt4omini";
+    
     private bool showConfig = false;
 
     private void ToggleConfig()
@@ -136,6 +142,13 @@
 
         return completionText ?? "No response.";
     }
+
+    private string ConvertMarkdownToHtml(string markdown)
+    {
+        if (string.IsNullOrEmpty(markdown)) return string.Empty;
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+        return Markdig.Markdown.ToHtml(markdown, pipeline);
+    }
 }
 
 <style>
@@ -148,7 +161,7 @@
     }
 
     .chat-container {
-        max-width: 600px;
+        max-width: 800px;
         margin: auto;
         padding: 20px;
     }
@@ -182,11 +195,13 @@
     }
 
     .chat-history {
-        height: 400px;
+        height: 600px;
         overflow-y: auto;
         border: 1px solid #ccc;
         padding: 10px;
         margin-bottom: 10px;
+        background: #fff;
+        font-size: 1.1rem;
     }
 
     .user-message {
@@ -201,6 +216,9 @@
         text-align: left;
         color: #0d6efd;
         margin: 5px 0;
+        width: 100%;
+        box-sizing: border-box;
+        word-break: break-word;
     }
 
     .chat-input {

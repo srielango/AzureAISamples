@@ -2,7 +2,7 @@
 
 namespace AIChat.Models;
 
-public class DocumentAnalysisResult
+public class TextAnalysisResult
 {
     public string OriginalText { get; set; } = string.Empty;
     public string DetectedLanguage { get; set; } = string.Empty;

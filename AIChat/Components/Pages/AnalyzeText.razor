@@ -2,7 +2,7 @@
 @using AIChat.Models
 @using AIChat.Services
 
-@inject ITextAnalysisService TextAnalysisService
+@inject TextAnalysisService TextAnalysisService
 
 @rendermode InteractiveServer
 
@@ -83,7 +83,7 @@
     private string InputText = string.Empty;
     private bool IsAnalyzing = false;
     private List<IBrowserFile> UploadedFiles = new();
-    private List<DocumentAnalysisResult> Results = new();
+    private List<TextAnalysisResult> Results = new();
 
     private async Task HandleFiles(InputFileChangeEventArgs e)
     {
