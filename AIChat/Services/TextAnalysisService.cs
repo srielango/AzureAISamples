@@ -17,8 +17,8 @@ public class TextAnalysisService
 
     public async Task<TextAnalysisResult> AnalyzeAsync(string text)
     {
-        var credentials = new AzureKeyCredential(_settings.ServiceKey);
-        var endPoint = new Uri(_settings.ServiceEndPoint);
+        var credentials = new AzureKeyCredential(_settings.TextAnalysis.ApiKey);
+        var endPoint = new Uri(_settings.TextAnalysis.Endpoint);
         TextAnalyticsClient aiClient = new TextAnalyticsClient(endPoint, credentials);
 
         return await Analyze(aiClient, text) ;

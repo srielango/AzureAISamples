@@ -19,7 +19,7 @@ public class AudioTranscriptionService
     {
         SpeechRecognitionResult result;
 
-        var speechConfig = SpeechConfig.FromSubscription(_settings.SpeechKey, _settings.SpeechRegion);
+        var speechConfig = SpeechConfig.FromSubscription(_settings.Speech.ApiKey, _settings.Speech.Region);
         speechConfig.SpeechRecognitionLanguage = "en-US";
         speechConfig.OutputFormat = OutputFormat.Detailed;
 

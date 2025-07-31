@@ -9,9 +9,11 @@ using System.Text.Json;
 public class SpeechService
 {
     private readonly AISettingsOption _settings;
-    private readonly string _key;
-    private readonly string _region;
+    private readonly string _speechKey;
+    private readonly string _speechRegion;
     private readonly string _translatorKey;
+    private readonly string _translatorRegion;
+
     private readonly IWebHostEnvironment _env;
 
     private readonly Dictionary<string, string> _voices = new()
@@ -27,9 +29,10 @@ public class SpeechService
     public SpeechService(IOptions<AISettingsOption> options, IWebHostEnvironment env)
     {
         _settings = options.Value;
-        _key = _settings.SpeechKey;
-        _region = _settings.SpeechRegion;
-        _translatorKey = _settings.TranslatorKey;
+        _speechKey = _settings.Speech.ApiKey;
+        _speechRegion = _settings.Speech.Region;
+        _translatorKey = _settings.Translator.ApiKey;
+        _translatorRegion = _settings.Translator.Region;
         _env = env;
     }
 
@@ -56,7 +59,7 @@ public class SpeechService
 
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _translatorKey);
-        client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Region", _region);
+        client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Region", _translatorRegion);
 
         var requestBody = new[]
         {
@@ -81,7 +84,7 @@ public class SpeechService
     }
     private async Task<byte[]> SynthesizeAsync(string text, string lang)
     {
-        var config = SpeechConfig.FromSubscription(_key, _region);
+        var config = SpeechConfig.FromSubscription(_speechKey, _speechRegion);
         config.SpeechSynthesisVoiceName = _voices[lang];
         using var synthesizer = new SpeechSynthesizer(config, null);
         var result = await synthesizer.SpeakTextAsync(text);
@@ -101,7 +104,7 @@ public class SpeechService
 
     private async Task<string> RecognizeSpeechAsync(string wavFile)
     {
-        var config = SpeechConfig.FromSubscription(_key, _region);
+        var config = SpeechConfig.FromSubscription(_speechKey, _speechRegion);
 
         using var audioInput = AudioConfig.FromWavFileInput(wavFile);
         using var recognizer = new SpeechRecognizer(config, audioInput);
